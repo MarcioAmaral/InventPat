@@ -2,13 +2,16 @@ package br.com.inventpat.view
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.Spinner
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import br.com.inventpat.R
 import br.com.inventpat.databinding.ActivityMainBinding
 import br.com.invpatrim.viewmodel.MainActivityViewModel
+import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -26,15 +29,16 @@ class MainActivity : AppCompatActivity() {
         binding.lifecycleOwner = this
         binding.inventario = viewModel
 
-     //   spinnerLoadUnid()
+        spinnerLoadUnid()
     }
 
     fun spinnerLoadUnid() {
-        //String array.
+        //fonte de dados
         val myStrings = arrayOf("011 - kg", "001 - litro", "002 - unidade", "017 - caixa")
         //Adapter for spinner
-       // spinnerUnid.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, myStrings)
-      //  viewModel.spinnerUnid = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, myStrings)
+        val arrayAdapter = ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item, myStrings)
+        val spinner: Spinner = findViewById(R.id.spinnerUnid)
+        spinner.adapter = arrayAdapter
     }
 
 

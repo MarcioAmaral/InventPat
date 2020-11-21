@@ -1,5 +1,4 @@
 <resources>
-
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.MaterialComponents.Light.NoActionBar">
         <!-- Customize your theme here. -->
@@ -29,6 +28,12 @@
         <item name="android:gravity">fill</item>
         <item name="android:textSize">14sp</item>
         <item name="android:textStyle">bold</item>
+        <item name="android:textColor">?attr/actionModeSplitBackground</item>
+    </style>
+
+    <style name="editext">
+        <item name="android:gravity">fill</item>
+        <item name="android:textSize">14sp</item>
         <item name="android:textColor">?attr/actionModeSplitBackground</item>
     </style>
 
