@@ -15,5 +15,6 @@
     <dimen name="textview_large_width">240dp</dimen>
     <dimen name="edittext_height">62dp</dimen>
     <dimen name="entrelinhas">2dp</dimen>
+    <dimen name="marginStart">2dp</dimen>
     <dimen name="button_height">62dp</dimen>
 </resources>

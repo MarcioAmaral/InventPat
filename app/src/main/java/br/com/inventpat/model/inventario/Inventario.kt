@@ -7,7 +7,8 @@ import br.com.inventpat.util.Converters
 
 @Entity
 data class Inventario(
-    @PrimaryKey val inventarioId: Int,
+    @PrimaryKey
+    val inventarioId: String,
     val empresa: Int,
     val unid_negocio: String,
     val local: String,
@@ -19,16 +20,16 @@ data class Inventario(
     val endereco4: String,
     val endereco5: String,
     val endereco6: String,
-    /*  @TypeConverters(Converters::class)
-      val fabricacao: Long = 0L,
-      @TypeConverters(Converters::class)
-      val validade: Long = 0L,
-      @TypeConverters(Converters::class)
-      val contagem1: Long = 0L,
-      @TypeConverters(Converters::class)
-      val contagem2: Long = 0L,
-      @TypeConverters(Converters::class)
-      val contagem3: Long = 0L, */
+    @TypeConverters(Converters::class)
+    val fabricacao: Long = 0L,
+    @TypeConverters(Converters::class)
+    val validade: Long = 0L,
+    @TypeConverters(Converters::class)
+    val contagem1: Long = 0L,
+    @TypeConverters(Converters::class)
+    val contagem2: Long = 0L,
+    @TypeConverters(Converters::class)
+    val contagem3: Long = 0L,
     val nt_fiscal: String,
     val valor: Double,
     val tecnico: String,
