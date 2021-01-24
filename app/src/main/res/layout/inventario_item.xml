@@ -21,7 +21,7 @@ xmlns:tools="http://schemas.android.com/tools">
         app:layout_constraintRight_toRightOf="parent"
         tools:context=".view.MainActivity">
 
-        <androidx.appcompat.widget.Toolbar
+        <!--<androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="66dp"
@@ -34,7 +34,7 @@ xmlns:tools="http://schemas.android.com/tools">
             app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
             app:title="Empresa Modelo"
             app:titleMarginStart="100sp"
-            app:titleTextAppearance="@style/TextAppearance.AppCompat.Large" />
+            app:titleTextAppearance="@style/TextAppearance.AppCompat.Large" />-->
 
         <TextView
             android:id="@+id/textView5"

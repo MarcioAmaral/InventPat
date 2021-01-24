@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.databinding.adapters.Converters
 import androidx.room.*
 
-@Database(entities = [Inventario::class], version = 1, exportSchema = false)
+@Database(entities = [Inventario::class], version = 2, exportSchema = false)
 //@TypeConverters(Converters::class)
 abstract class InventarioDatabase : RoomDatabase() {
 

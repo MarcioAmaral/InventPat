@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation">
+    <fragment
+        android:id="@+id/export_Fragment"
+        android:name="br.com.inventpat.Export_Fragment"
+        android:label="export_fragment"
+        tools:layout="@layout/export_fragment" />
+    <fragment
+        android:id="@+id/import_Fragment"
+        android:name="br.com.inventpat.Import_Fragment"
+        android:label="import_fragment"
+        tools:layout="@layout/import_fragment" />
+</navigation>
