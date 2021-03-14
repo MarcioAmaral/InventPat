@@ -1,5 +1,8 @@
 package br.com.inventpat.model.inventario
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
 class InventarioRepository(private val dao: InventarioDao) {
 
     val inventarios = dao.getAllInventarios()
@@ -20,7 +23,16 @@ class InventarioRepository(private val dao: InventarioDao) {
         return dao.clearInventario()
     }
 
-    suspend fun getInventario(key: Int){
+    suspend fun getInventario(){
         dao.getAllInventarios()
     }
+
+    suspend fun getAllInventario(key: String){
+        dao.getInventario(key)
+    }
+
+    suspend fun countInventario() = withContext(Dispatchers.Default) {
+        dao.countInventario()
+    }
+
 }

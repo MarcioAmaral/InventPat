@@ -1,8 +1,9 @@
 package br.com.inventpat.model.inventario
 
 import android.content.Context
-import androidx.databinding.adapters.Converters
-import androidx.room.*
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
 
 @Database(entities = [Inventario::class], version = 2, exportSchema = false)
 //@TypeConverters(Converters::class)
@@ -13,6 +14,7 @@ abstract class InventarioDatabase : RoomDatabase() {
     companion object {
         @Volatile
         private var INSTANCE: InventarioDatabase? = null
+        const val BASE_NOME = "invent_pat_database"
 
         fun getInstance(context: Context): InventarioDatabase {
             synchronized(this) {
@@ -22,7 +24,7 @@ abstract class InventarioDatabase : RoomDatabase() {
                     instance = Room.databaseBuilder(
                         context.applicationContext,
                         InventarioDatabase::class.java,
-                        "invent_pat_database"
+                        BASE_NOME
                     )
                         .fallbackToDestructiveMigration()
                         .build()

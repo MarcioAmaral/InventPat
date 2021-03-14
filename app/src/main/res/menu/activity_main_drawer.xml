@@ -6,11 +6,15 @@ tools:showIn="navigation_view">
 <group android:checkableBehavior="single">
     <item
         android:id="@+id/nav_export"
-        android:icon="?attr/actionModePasteDrawable"
-        android:title="@string/menu_exportar" />
+        android:icon="@drawable/ic_far_file_excel"
+        android:title="@string/menu_exportar"/>
     <item
         android:id="@+id/nav_import"
-        android:icon="@drawable/ic_receipt_black_24dp"
-        android:title="@string/menu_importar" />
+        android:icon="@drawable/ic_far_file_excel"
+        android:title="@string/menu_importar"/>
+    <item
+        android:id="@+id/nav_clear"
+        android:icon="@drawable/ic_fas_database"
+        android:title="@string/menu_limpar"/>
 </group>
 </menu>

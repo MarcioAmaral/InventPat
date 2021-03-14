@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="br.com.inventpat">
 
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
     <uses-feature
         android:name="android.hardware.camera.any"
         android:required="true" />
@@ -16,6 +19,9 @@
         android:roundIcon="@mipmap/mysplash"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <activity android:name=".view.ImageFullActivity"/>
+        <activity android:name=".view.DrawerActivity" />
+
         <meta-data
             android:name="com.google.android.actions"
             android:resource="@xml/provider_paths" />

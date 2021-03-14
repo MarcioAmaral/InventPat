@@ -1,14 +1,6 @@
 package br.com.invpatrim.viewmodel
 
-import android.content.Intent
-import android.net.Uri
-import android.os.Environment
-import android.provider.MediaStore
-import android.widget.ImageView
-import android.widget.Toast
-import androidx.core.content.ContextCompat.startActivity
 import androidx.databinding.Bindable
-import androidx.databinding.BindingAdapter
 import androidx.databinding.Observable
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -17,22 +9,23 @@ import androidx.lifecycle.viewModelScope
 import br.com.inventpat.model.inventario.Inventario
 import br.com.inventpat.model.inventario.InventarioRepository
 import br.com.inventpat.util.Event
-import com.bumptech.glide.Glide
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.joda.time.LocalDate
-import org.joda.time.format.DateTimeFormat
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
 
 
-class InventarioViewModel(private val repository: InventarioRepository) : ViewModel(), Observable {
+class InventarioViewModel<totReg>(private val repository: InventarioRepository) : ViewModel(), Observable {
 
     val inventarios = repository.inventarios
     private var isUpdateOrDelete = false
-    private lateinit var inventarioToUpdateOrDelete: Inventario
+
+    var totReg = 0
+    companion object {
+      var baseAlterada = false    // Controle imp e manutenção base SQLite
+    }
+
+    var idCod = MutableLiveData<Boolean>()
 
     @Bindable
     val inputCodigo = MutableLiveData<String?>()
@@ -62,17 +55,6 @@ class InventarioViewModel(private val repository: InventarioRepository) : ViewMo
     val inputFoto = MutableLiveData<String>()
 
     @Bindable
-    val saveOrUpdateButtonText = MutableLiveData<String>()
-
-    @Bindable
-    val clearAllOrDeleteButtonText = MutableLiveData<String>()
-
-    @Bindable
-    val incluirButtonText = MutableLiveData<String>()
-
-    @Bindable
-    val excluirButtonText = MutableLiveData<String>()
-    @Bindable
     var btnSalvar = MutableLiveData<Boolean>()
     @Bindable
     var btnFoto = MutableLiveData<Boolean>()
@@ -80,6 +62,8 @@ class InventarioViewModel(private val repository: InventarioRepository) : ViewMo
     var btnIncluir = MutableLiveData<Boolean>()
     @Bindable
     var btnExcluir = MutableLiveData<Boolean>()
+    @Bindable
+    var btnCancelar = MutableLiveData<Boolean>()
 
     private val statusMessage = MutableLiveData<Event<String>>()
     val message: LiveData<Event<String>>
@@ -95,16 +79,21 @@ class InventarioViewModel(private val repository: InventarioRepository) : ViewMo
     var spEnd6 = MutableLiveData<String>()
 
     init {
+        cancelarItem()
+    }
+
+    fun cancelarItem() { //Configura botões tela
         clearAll()
-        incluirButtonText.value = "Incluir"
-        excluirButtonText.value = "Excluir"
+        idCod.value = false
+        btnCancelar.value = false
         btnSalvar.value = false
         btnFoto.value = false
         btnIncluir.value = true
         btnExcluir.value = false
+        isUpdateOrDelete = false
     }
 
-    fun clearAll() {
+    fun clearAll() {  //Limpa tela
         inputCodigo.value = null
         //empresa: Int
         //unid.negócio: String
@@ -125,14 +114,36 @@ class InventarioViewModel(private val repository: InventarioRepository) : ViewMo
         //N.Fiscal: String
         //valor: Double
         inputTecnico.value = ""
-        inputFoto.value = ""
+        inputFoto.value = null
     }
 
-    fun incluirItem() {
+    fun incluirItem() {  //Configura botões tela
         clearAll()
+        idCod.value = true
         btnSalvar.value = true
         btnFoto.value = true
+        btnCancelar.value = true
         btnIncluir.value = false
+        btnExcluir.value = false
+        isUpdateOrDelete = false
+    }
+
+    fun editarExcluir() { //Configura botões tela
+        idCod.value = false
+        btnSalvar.value = true
+        btnFoto.value = true
+        btnCancelar.value = true
+        btnIncluir.value = false
+        btnExcluir.value = true
+        isUpdateOrDelete = true
+    }
+
+    fun telaExcluir() {  //Ajustar tela(proteger campos) antes da confirmação da exclusão
+        idCod.value = false
+        btnCancelar.value = false
+        btnSalvar.value = false
+        btnFoto.value = false
+        btnIncluir.value = true
         btnExcluir.value = false
     }
 
@@ -148,88 +159,86 @@ class InventarioViewModel(private val repository: InventarioRepository) : ViewMo
         statusMessage.value = Event("Por favor informe a unidade")
     } else {
         if (isUpdateOrDelete) {
-            /*subscriberToUpdateOrDelete.name = inputName.value!!
-            subscriberToUpdateOrDelete.email = inputEmail.value!!
-            update(subscriberToUpdateOrDelete)*/
-            statusMessage.value = Event("Atualizar ou Excluir item - confirmar exclusão")
-            posicionarItemSalvo()
+            alterarItem(getInventario())
         } else {
-            val cod: String = inputCodigo.value!!.trim()
-            val emp = 0
-            val unidNeg = ""
-            val local = spLocal.value!!
-            val descr = inputDescricao.value!!.trim()
-            val unidMed = spUnidMed.value!!
-            val end1 = spEnd1.value!!
-            val end2 = spEnd2.value!!
-            val end3 = spEnd3.value!!
-            val end4 = spEnd4.value!!
-            val end5 = spEnd5.value!!
-            val end6 = spEnd6.value!!
-            val fabr = inputFabr.value!!.trim()
-            val valid = inputValid.value!!.trim()
-            val contagem1 = inputCont1.value!!.trim()
-            val contagem2 = inputCont2.value!!.trim()
-            val contagem3 = inputCont3.value!!.trim()
-            val nf = ""
-            val valor = 0.00
-            val tecnico = inputTecnico.value!!.trim()
-            val foto = inputFoto.value!!.trim()
-            insert(
-                Inventario(
-                    cod,
-                    emp,
-                    unidNeg,
-                    local,
-                    descr,
-                    unidMed,
-                    end1,
-                    end2,
-                    end3,
-                    end4,
-                    end5,
-                    end6,
-                    fabr,
-                    valid,
-                    contagem1,
-                    contagem2,
-                    contagem3,
-                    nf,
-                    valor,
-                    tecnico,
-                    foto
-                )
-            )
-            posicionarItemSalvo()
+            inserirItem(getInventario())
         }
+        posicionarItemSalvo()
     }
 
-    fun insert(inventario: Inventario) = viewModelScope.launch {
+    private fun inserirItem(inventario: Inventario) = viewModelScope.launch {
         var newRowId: Long
         withContext(Dispatchers.IO) {
            newRowId = repository.insert(inventario)
         }
         if(newRowId>-1) {
-            statusMessage.value = Event("Item inserido com sucesso $newRowId")
+            statusMessage.value = Event("Item ${inventario.inventarioId} inserido com sucesso!")
         }else{
-            statusMessage.value = Event("Ocorreu um erro, item não inserido!")
+            statusMessage.value = Event("Ocorreu um problema, item não inserido!")
         }
     }
 
     private fun posicionarItemSalvo() {
         clearAll()
         btnSalvar.value = false
+        btnCancelar.value = false
         btnFoto.value = false
         btnIncluir.value = true
         btnExcluir.value = false
         isUpdateOrDelete = false
     }
 
-    fun excluirItem() {
-        statusMessage.value = Event("Excluir item - confirmar exclusão")
+    private fun getInventario(): Inventario {
+        return Inventario(
+        inventarioId = inputCodigo.value!!.trim(),
+        empresa = 0,
+        unid_negocio = "",
+        local = spLocal.value!!,
+        descricao = inputDescricao.value!!.trim(),
+        unid_medida = spUnidMed.value!!,
+        endereco1 = spEnd1.value!!,
+        endereco2 = spEnd2.value!!,
+        endereco3 = spEnd3.value!!,
+        endereco4 = spEnd4.value!!,
+        endereco5 = spEnd5.value!!,
+        endereco6 = spEnd6.value!!,
+        fabricacao = inputFabr.value!!.trim(),
+        validade = inputValid.value!!.trim(),
+        contagem1 = inputCont1.value!!.trim(),
+        contagem2 = inputCont2.value!!.trim(),
+        contagem3 = inputCont3.value!!.trim(),
+        nt_fiscal = "",
+        valor = 0.00,
+        tecnico = inputTecnico.value!!.trim(),
+        foto = inputFoto.value?.trim())
     }
 
-    fun initUpadetAndDelete(inventario: Inventario) {
+    private fun alterarItem(inventario: Inventario) = viewModelScope.launch {
+        var newRowId: Int
+        withContext(Dispatchers.IO) {
+            newRowId = repository.update(inventario)
+        }
+        if(newRowId>-1) {
+            statusMessage.value = Event("Item ${inventario.inventarioId} atualizado com sucesso!")
+        }else{
+            statusMessage.value = Event("Ocorreu um problema, item não atualizado!")
+        }
+    }
+
+    fun excluirItem(item: Inventario) = viewModelScope.launch{
+        var itemExcl: Int
+        val id = item.inventarioId
+        withContext(Dispatchers.IO) {
+            itemExcl = repository.delete(item)
+        }
+        if (itemExcl>-1) {
+            statusMessage.value = Event("Item ${id} excluído com sucesso!")
+        } else {
+            statusMessage.value = Event("Ocorreu um problema, item não excluído!")
+        }
+    }
+
+    fun initUpadetAndDelete(inventario: Inventario) {  //Atualizar campos tela
         inputCodigo.value = inventario.inventarioId.toString()
         inputDescricao.value = inventario.descricao
         inputCont1.value = inventario.contagem1.toString()
@@ -237,12 +246,29 @@ class InventarioViewModel(private val repository: InventarioRepository) : ViewMo
         inputCont3.value = inventario.contagem3.toString()
         inputFabr.value = inventario.fabricacao.toString()
         inputValid.value = inventario.validade.toString()
-        inputFoto.value = inventario.foto
+        inputFoto.value = when(!inventario.foto.isNullOrBlank()){
+            true -> inventario.foto
+            else -> null
+        }
+       // if(!inventario.foto.isNullOrBlank()) inputFoto.value = inventario.foto
         inputTecnico.value = inventario.tecnico
         isUpdateOrDelete = true
-        inventarioToUpdateOrDelete = inventario
-        saveOrUpdateButtonText.value = "Update"
-        clearAllOrDeleteButtonText.value = "Delete"
+    }
+
+    fun countReg(): Job = viewModelScope.launch {
+        val cursorCount = repository.countInventario()
+        cursorCount.moveToFirst()
+        totReg = cursorCount.getInt(0)
+      //  "Foram exportados ${cursorCount.getInt(0).toString()} registro(s) para a tabela inventario.xls"
+
+    }
+
+    suspend fun limparInventario() = withContext(Dispatchers.IO) {
+        repository.clear()  // limpar base Inventário
+    }
+
+    fun controlarBD(status: Boolean) {
+        baseAlterada = status
     }
 
     override fun addOnPropertyChangedCallback(callback: Observable.OnPropertyChangedCallback?) {
@@ -252,5 +278,4 @@ class InventarioViewModel(private val repository: InventarioRepository) : ViewMo
     override fun removeOnPropertyChangedCallback(callback: Observable.OnPropertyChangedCallback?) {
 
     }
-
 }

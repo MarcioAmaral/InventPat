@@ -2,13 +2,11 @@ package br.com.inventpat.model.inventario
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.TypeConverters
-import br.com.inventpat.util.Converters
 
 @Entity
 data class Inventario(
     @PrimaryKey
-    val inventarioId: String,
+    var inventarioId: String,
     val empresa: Int,
     val unid_negocio: String?,
     val local: String,

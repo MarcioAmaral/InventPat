@@ -1,19 +1,18 @@
 package br.com.inventpat.view
 
 import android.app.Activity
+import android.content.DialogInterface
 import android.content.Intent
-import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.view.ContextThemeWrapper
 import android.view.MenuItem
 import android.view.View
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.Spinner
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.FileProvider
@@ -22,16 +21,21 @@ import androidx.databinding.DataBindingUtil
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.ui.AppBarConfiguration
 import androidx.recyclerview.widget.LinearLayoutManager
 import br.com.inventpat.R
 import br.com.inventpat.databinding.ActivityMainBinding
 import br.com.inventpat.model.inventario.Inventario
 import br.com.inventpat.model.inventario.InventarioDatabase
 import br.com.inventpat.model.inventario.InventarioRepository
+import br.com.inventpat.util.Util
 import br.com.inventpat.viewmodel.InventarioViewModelFactory
 import br.com.invpatrim.viewmodel.InventarioViewModel
+import com.bumptech.glide.Glide
 import com.google.android.material.navigation.NavigationView
+import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
@@ -40,31 +44,34 @@ import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var layout_main: LinearLayout
     private lateinit var binding: ActivityMainBinding
-    private lateinit var inventarioViewModel: InventarioViewModel
+    private lateinit var inventarioViewModel: InventarioViewModel<Any?>
     private lateinit var adapterInvViewHolder: InventRecyclerViewAdapter
-    private lateinit var appBarConfiguration: AppBarConfiguration
+   // private lateinit var appBarConfiguration: AppBarConfiguration
 
     private lateinit var toggle: ActionBarDrawerToggle
+    private lateinit var drawerLayout : DrawerLayout
 
    // private val CAMREQUEST = 1
     private val PICK_IMAGE_CODE = 1
   //  private val PICK_IMAGE = 1
   //  var fileUri: Uri? = null
     var currentPhotoPath = ""
-    lateinit var bitFotoSelecionada: Bitmap
+    //lateinit var bitFotoSelecionada: Bitmap
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        Thread.sleep(2000)
-        setTheme(R.style.AppTheme)
+       // Thread.sleep(1000)
+       // setTheme(R.style.AppTheme)
 
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
-        //
+
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
 
-        val drawerLayout : DrawerLayout = findViewById(R.id.drawer_layout)
+        layout_main = findViewById(R.id.mainLayout)
+        drawerLayout = findViewById(R.id.drawer_layout)
         val navView: NavigationView = findViewById(R.id.nav_view)
 
         toggle = ActionBarDrawerToggle(this, drawerLayout, R.string.open, R.string.close)
@@ -72,52 +79,45 @@ class MainActivity : AppCompatActivity() {
         toggle.syncState()
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        navView.setNavigationItemSelectedListener {
-            when(it.itemId) {
-                R.id.nav_export -> Toast.makeText(applicationContext,
-                "Clicked Item 2", Toast.LENGTH_LONG).show()
+        GlobalScope.launch(Dispatchers.Main) {
+            navView.setNavigationItemSelectedListener {
+                intent = when (it.itemId) {
+                    R.id.nav_export -> Intent(this@MainActivity, DrawerActivity::class.java).apply {
+                        putExtra("opcao", "export")
+                    }
 
-                R.id.nav_import -> Toast.makeText(applicationContext,
-                    "Clicked Item 2", Toast.LENGTH_LONG).show()
+                    R.id.nav_import -> Intent(this@MainActivity, DrawerActivity::class.java).apply {
+                        putExtra("opcao", "import")
+                    }
+
+                    R.id.nav_clear -> Intent(this@MainActivity, DrawerActivity::class.java).apply {
+                        putExtra("opcao", "clearAll")
+                    }
+
+                    else -> intent
+                }
+                //   toolbar.setNavigationIcon(R.drawable.ic_lock)  // Trocar icon da drawer
+
+                startActivity(intent)
+             //   finish(
+
+                drawerLayout.closeDrawer(GravityCompat.START)
+                true
             }
-         //   toolbar.setNavigationIcon(R.drawable.ic_lock)  // Trocar icon da drawer
-            drawerLayout.closeDrawer(GravityCompat.START)
-            true
         }
-
-        /*val navController = findNavController(R.id.nav_host_fragment)
-        // Passing each menu ID as a set of Ids because each
-        // menu should be considered as top level destinations.
-        appBarConfiguration = AppBarConfiguration(setOf(
-            R.id.nav_export, R.id.nav_import), drawerLayout)
-        setupActionBarWithNavController(navController, appBarConfiguration)
-        navView.setupWithNavController(navController)*/
-// Fragment
-//        val navController = findNavController(R.id.nav_host_fragment)
-        // Passing each menu ID as a set of Ids because each
-        // menu should be considered as top level destinations.
-        //test
-        /*val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-        val navController = navHostFragment.navController*/
-
-        /*appBarConfiguration = AppBarConfiguration(setOf(
-            R.id.nav_export, R.id.nav_import), drawerLayout)*/
-        //test
-       // setupActionBarWithNavController(navController, appBarConfiguration)
-       // navView.setupWithNavController(navController)
 
         val dao = InventarioDatabase.getInstance(application).inventarioDao
         val repository = InventarioRepository(dao)
         val factory = InventarioViewModelFactory(repository)
-        inventarioViewModel = ViewModelProvider(this, factory).get(InventarioViewModel::class.java)
+        inventarioViewModel = ViewModelProvider(this, factory).get(InventarioViewModel::class.java) as InventarioViewModel<Any?>
         binding.viewModel = inventarioViewModel
         binding.lifecycleOwner = this
 
         initRecyclerView()
 
         inventarioViewModel.message.observe(this, Observer {
-            it.getContentIfNotHandled()?.let { it ->
-                Toast.makeText(this, it, Toast.LENGTH_LONG).show()
+            it.getContentIfNotHandled()?.let { its ->
+                Util.showSnackBar(layout_main, its)
             }
         })
 
@@ -148,6 +148,7 @@ class MainActivity : AppCompatActivity() {
                 id: Long
             ) {
                 if (parent != null) {
+
                     inventarioViewModel.spUnidMed.value = parent.getItemAtPosition(position).toString()
                 }
             }
@@ -259,47 +260,60 @@ class MainActivity : AppCompatActivity() {
         })
 
         inventarioViewModel.inputCodigo.observe(this, Observer {
-            if (!it.isNullOrBlank() && inventarioViewModel.btnIncluir.value == true) {
+            if (!it.isNullOrBlank() && inventarioViewModel.btnIncluir.value == false &&
+                adapterInvViewHolder.getItemCount() != 0) {
                 var spinnerKey =
-                    adapterInvViewHolder.itemLocal.toString().substringBefore("-").trim()
+                    InventRecyclerViewAdapter.inventSelect.local.substringBefore("-").trim()
                 var posicao = getIndexByString(binding.spinnerLocal, spinnerKey)
                 binding.spinnerLocal.setSelection(posicao)
 
+                spinnerKey = InventRecyclerViewAdapter.inventSelect.unid_medida.substringBefore("-").trim()
                 posicao = getIndexByString(binding.spinnerUnid, spinnerKey)
                 binding.spinnerUnid.setSelection(posicao)
 
-                spinnerKey = adapterInvViewHolder.itemEnd1.toString().substringBefore("-").trim()
+                spinnerKey = InventRecyclerViewAdapter.inventSelect.endereco1.toString().substringBefore("-").trim()
                 posicao = getIndexByString(binding.spinnerEnd1, spinnerKey)
                 binding.spinnerEnd1.setSelection(posicao)
 
-                spinnerKey = adapterInvViewHolder.itemEnd2.toString().substringBefore("-").trim()
+                spinnerKey = InventRecyclerViewAdapter.inventSelect.endereco2.toString().substringBefore("-").trim()
                 posicao = getIndexByString(binding.spinnerEnd2, spinnerKey)
                 binding.spinnerEnd2.setSelection(posicao)
 
-                spinnerKey = adapterInvViewHolder.itemEnd3.toString().substringBefore("-").trim()
+                spinnerKey = InventRecyclerViewAdapter.inventSelect.endereco3.toString().substringBefore("-").trim()
                 posicao = getIndexByString(binding.spinnerEnd3, spinnerKey)
                 binding.spinnerEnd3.setSelection(posicao)
 
-                spinnerKey = adapterInvViewHolder.itemEnd4.toString().substringBefore("-").trim()
+                spinnerKey = InventRecyclerViewAdapter.inventSelect.endereco4.toString().substringBefore("-").trim()
                 posicao = getIndexByString(binding.spinnerEnd4, spinnerKey)
                 binding.spinnerEnd4.setSelection(posicao)
 
-                spinnerKey = adapterInvViewHolder.itemEnd5.toString().substringBefore("-").trim()
+                spinnerKey = InventRecyclerViewAdapter.inventSelect.endereco5.toString().substringBefore("-").trim()
                 posicao = getIndexByString(binding.spinnerEnd5, spinnerKey)
                 binding.spinnerEnd5.setSelection(posicao)
 
-                spinnerKey = adapterInvViewHolder.itemEnd6.toString().substringBefore("-").trim()
+                spinnerKey = InventRecyclerViewAdapter.inventSelect.endereco6.toString().substringBefore("-").trim()
                 posicao = getIndexByString(binding.spinnerEnd6, spinnerKey)
                 binding.spinnerEnd6.setSelection(posicao)
 
             }
         })
         binding.imageView.setOnClickListener {
-            Toast.makeText(
-                this,
-                "Abrir foto  ${inventarioViewModel.inputFoto.value}",
-                Toast.LENGTH_LONG
-            ).show()
+            val currentPhotoPath = inventarioViewModel.inputFoto.value
+            if (!currentPhotoPath.isNullOrEmpty()) {
+                intent = Intent(this@MainActivity, ImageFullActivity::class.java)
+                intent.putExtra("codigo", inventarioViewModel.inputCodigo.value)
+                intent.putExtra("descricao", inventarioViewModel.inputDescricao.value)
+                intent.putExtra("foto", currentPhotoPath)
+                startActivity(intent)
+            }
+        }
+    }
+
+    override fun onBackPressed() {
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START)
+        } else {
+            super.onBackPressed()
         }
     }
 
@@ -323,26 +337,6 @@ class MainActivity : AppCompatActivity() {
         }
         return index
     }
-
-    /*override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        menuInflater.inflate(R.menu.activity_main_drawer, menu)
-        return true
-    }*/
-
-    /*override fun onSupportNavigateUp(): Boolean {
-        val navController = findNavController(R.id.nav_host_fragment)
-        return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
-    }*/
-    /*override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            android.R.id.home -> {
-                Toast.makeText(this, "Click menu", Toast.LENGTH_LONG).show()
-                return true
-            }
-        }
-        return super.onOptionsItemSelected(item)
-    }*/
 
     private fun clearSpinner() {
         binding.spinnerLocal.setSelection(0)
@@ -368,16 +362,16 @@ class MainActivity : AppCompatActivity() {
         displayInvList()
     }
 
+    fun listItemClicked(inventario: Inventario) {
+        inventarioViewModel.editarExcluir()
+        inventarioViewModel.initUpadetAndDelete(inventario)
+    }
+
     fun displayInvList() {
         inventarioViewModel.inventarios.observe(this, Observer {
             adapterInvViewHolder.setList(it)
             adapterInvViewHolder.notifyDataSetChanged()
         })
-    }
-
-    fun listItemClicked(inventario: Inventario) {
-        //inventario
-        inventarioViewModel.initUpadetAndDelete(inventario)
     }
 
     fun loadSpinner(){
@@ -454,18 +448,15 @@ class MainActivity : AppCompatActivity() {
             android.R.layout.simple_spinner_dropdown_item,
             arrayInf
         )
-        val spinner: Spinner = findViewById(spinner)
+        val tempSpinner: Spinner = findViewById(spinner)
 
-        spinner.adapter = arrayAdapter
+        tempSpinner.adapter = arrayAdapter
     }
 
     fun abrirCamera(view: View) {   // Camera
         if (binding.idCodigo.text.isNullOrBlank()) {
-            Toast.makeText(
-                this,
-                "Por favor informe o código do item antes da foto",
-                Toast.LENGTH_SHORT
-            ).show()
+            Util.showSnackBar(view,
+                "Por favor informe o código do item antes da foto")
             binding.idCodigo.requestFocus(0)
             return
         }
@@ -482,7 +473,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 // Continue only if the File was successfully created
                 if (photoFile != null) {
-                    photoFile.also {
+                    val also = photoFile.also {
                         val photoURI: Uri = FileProvider.getUriForFile(
                             this,
                             "br.com.inventpat",
@@ -519,14 +510,13 @@ class MainActivity : AppCompatActivity() {
             // Cria a pasta se não existir
             if (!mediaStorageDir.exists()) {
                 if (!mediaStorageDir.mkdirs()){
-                    Toast.makeText(this, "", Toast.LENGTH_LONG).show()
+                    Util.showSnackBar(layout_main,"")
                     return null
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
-
         return mediaStorageDir
     }
 
@@ -536,25 +526,11 @@ class MainActivity : AppCompatActivity() {
             when(requestCode){
                 PICK_IMAGE_CODE ->
                     if (resultCode == Activity.RESULT_OK) {
-                        //val thumbnail = MediaStore.Images.Media.getBitmap(
-                        //contentResolver, imageUri)
-                        //  bitFotoSelecionada = data.extras?.get("data") as Bitmap
-                        // colocaFotoProduto.setImageBitmap(bitFotoSelecionada)
-
-                        val file = File(currentPhotoPath)
-                        val bitmap = MediaStore.Images.Media.getBitmap(
-                            contentResolver, Uri.fromFile(
-                                file
-                            )
-                        )
-                        bitFotoSelecionada = bitmap
-                        inventarioViewModel.inputFoto.value = Uri.fromFile(file).toString()
-                        /*val imageUrl = Uri.fromFile(file).toString()
-                        if (!imageUrl.isNullOrEmpty()) {
+                        if (!currentPhotoPath.isNullOrEmpty()) {
                             Glide.with(this)
-                                .load(imageUrl)
+                                .load(currentPhotoPath)
                                 .into(binding.imageView)
-                        }*/
+                        }
                     }
             }
         }catch (e: Exception){
@@ -563,12 +539,54 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /*@BindingAdapter("imageFromUrl")
-    fun bindImageFromUrl(view: ImageView, imageUrl: String?) {
-        if (!imageUrl.isNullOrEmpty()) {
-            Glide.with(view.context)
-                .load(imageUrl)
-                .into(view)
+    override fun onResume() {
+        super.onResume()
+        val totRecycler = adapterInvViewHolder.itemCount
+        inventarioViewModel.countReg()
+        val totBase = inventarioViewModel.totReg
+        if (totRecycler != totBase && InventarioViewModel.baseAlterada) {
+            withStyle()
         }
-    }*/
+    }
+
+    fun withStyle() {
+
+        val builder = AlertDialog.Builder(
+            ContextThemeWrapper(
+                this,
+                android.R.style.Holo_SegmentedButton
+            )
+        )
+
+        with(builder)
+        {
+            setTitle("Alteração na base!")
+            setMessage("Atenção, as informações da base Inventário sofreram alterações. " +
+                    "O aplicativo vai ser fechado. Favor abri-lo novamente")
+            setPositiveButton("OK", DialogInterface.OnClickListener(function = positiveButtonClick))
+
+            show()
+        }
+    }
+
+    val positiveButtonClick = { dialog: DialogInterface, which: Int ->
+        finish()
+    }
+
+    fun excluirItem(view: View){
+
+        val item: String = InventRecyclerViewAdapter.inventSelect.inventarioId
+        inventarioViewModel.telaExcluir()
+        Snackbar.make(
+            view,
+            "Confirma exclusão item $item",
+            Snackbar.LENGTH_LONG
+        ).setAction(
+            "CONFIRMAR"
+        ) {
+            inventarioViewModel.excluirItem(InventRecyclerViewAdapter.inventSelect)
+        }.show()
+        inventarioViewModel.clearAll()
+    }
 }
+
