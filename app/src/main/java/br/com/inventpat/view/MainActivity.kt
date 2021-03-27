@@ -19,7 +19,6 @@ import androidx.core.content.FileProvider
 import androidx.core.view.GravityCompat
 import androidx.databinding.DataBindingUtil
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import br.com.inventpat.R
@@ -115,7 +114,7 @@ class MainActivity : AppCompatActivity() {
 
         initRecyclerView()
 
-        inventarioViewModel.message.observe(this, Observer {
+        inventarioViewModel.message.observe(this, {
             it.getContentIfNotHandled()?.let { its ->
                 Util.showSnackBar(layout_main, its)
             }
@@ -253,45 +252,75 @@ class MainActivity : AppCompatActivity() {
 
             }
         }
-        inventarioViewModel.spLocal.observe(this, Observer {
+        inventarioViewModel.spLocal.observe(this, {
             if (it.isNullOrBlank()) {
                 clearSpinner()
             }
         })
 
-        inventarioViewModel.inputCodigo.observe(this, Observer {
-            if (!it.isNullOrBlank() && inventarioViewModel.btnIncluir.value == false &&
-                adapterInvViewHolder.getItemCount() != 0) {
+        inventarioViewModel.inputCodigo.observe(this, {
+            // buscar na base e alimentar adapterInvViewHolder.inventSelect = inventário
+            if (!it.isNullOrBlank() && inventarioViewModel.btnIncluir.value == true) {
+                inventarioViewModel.getItem(it)
+                if (inventarioViewModel.item != null) {
+                    InventRecyclerViewAdapter.inventSelect = inventarioViewModel.item
+                    inventarioViewModel.editarExcluir()
+                    listItemClicked(inventarioViewModel.item!!)
+                }
+            }
+            if (!it.isNullOrBlank() && inventarioViewModel.isUpdateOrDelete &&
+                adapterInvViewHolder.itemCount != 0
+            ) {
                 var spinnerKey =
-                    InventRecyclerViewAdapter.inventSelect.local.substringBefore("-").trim()
-                var posicao = getIndexByString(binding.spinnerLocal, spinnerKey)
+                    InventRecyclerViewAdapter.inventSelect?.local?.substringBefore("-")?.trim()
+                var posicao = getIndexByString(binding.spinnerLocal, spinnerKey!!)
                 binding.spinnerLocal.setSelection(posicao)
 
-                spinnerKey = InventRecyclerViewAdapter.inventSelect.unid_medida.substringBefore("-").trim()
-                posicao = getIndexByString(binding.spinnerUnid, spinnerKey)
+                spinnerKey =
+                    InventRecyclerViewAdapter.inventSelect?.unid_medida?.substringBefore("-")
+                        ?.trim()
+                posicao = getIndexByString(binding.spinnerUnid, spinnerKey!!)
                 binding.spinnerUnid.setSelection(posicao)
 
-                spinnerKey = InventRecyclerViewAdapter.inventSelect.endereco1.toString().substringBefore("-").trim()
+                spinnerKey =
+                    InventRecyclerViewAdapter.inventSelect?.endereco1.toString().substringBefore(
+                        "-"
+                    ).trim()
                 posicao = getIndexByString(binding.spinnerEnd1, spinnerKey)
                 binding.spinnerEnd1.setSelection(posicao)
 
-                spinnerKey = InventRecyclerViewAdapter.inventSelect.endereco2.toString().substringBefore("-").trim()
+                spinnerKey =
+                    InventRecyclerViewAdapter.inventSelect?.endereco2.toString().substringBefore(
+                        "-"
+                    ).trim()
                 posicao = getIndexByString(binding.spinnerEnd2, spinnerKey)
                 binding.spinnerEnd2.setSelection(posicao)
 
-                spinnerKey = InventRecyclerViewAdapter.inventSelect.endereco3.toString().substringBefore("-").trim()
+                spinnerKey =
+                    InventRecyclerViewAdapter.inventSelect?.endereco3.toString().substringBefore(
+                        "-"
+                    ).trim()
                 posicao = getIndexByString(binding.spinnerEnd3, spinnerKey)
                 binding.spinnerEnd3.setSelection(posicao)
 
-                spinnerKey = InventRecyclerViewAdapter.inventSelect.endereco4.toString().substringBefore("-").trim()
+                spinnerKey =
+                    InventRecyclerViewAdapter.inventSelect?.endereco4.toString().substringBefore(
+                        "-"
+                    ).trim()
                 posicao = getIndexByString(binding.spinnerEnd4, spinnerKey)
                 binding.spinnerEnd4.setSelection(posicao)
 
-                spinnerKey = InventRecyclerViewAdapter.inventSelect.endereco5.toString().substringBefore("-").trim()
+                spinnerKey =
+                    InventRecyclerViewAdapter.inventSelect?.endereco5.toString().substringBefore(
+                        "-"
+                    ).trim()
                 posicao = getIndexByString(binding.spinnerEnd5, spinnerKey)
                 binding.spinnerEnd5.setSelection(posicao)
 
-                spinnerKey = InventRecyclerViewAdapter.inventSelect.endereco6.toString().substringBefore("-").trim()
+                spinnerKey =
+                    InventRecyclerViewAdapter.inventSelect?.endereco6.toString().substringBefore(
+                        "-"
+                    ).trim()
                 posicao = getIndexByString(binding.spinnerEnd6, spinnerKey)
                 binding.spinnerEnd6.setSelection(posicao)
 
@@ -359,6 +388,7 @@ class MainActivity : AppCompatActivity() {
             )
         }
         binding.inventarioRecyclerView.adapter = adapterInvViewHolder
+        inventarioViewModel.loadInventarios()
         displayInvList()
     }
 
@@ -368,7 +398,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun displayInvList() {
-        inventarioViewModel.inventarios.observe(this, Observer {
+        inventarioViewModel.inventarios.observe(this, {
             adapterInvViewHolder.setList(it)
             adapterInvViewHolder.notifyDataSetChanged()
         })
@@ -377,7 +407,6 @@ class MainActivity : AppCompatActivity() {
     fun loadSpinner(){
         //spinnerLoadUnid()
         var myStrings = arrayOf(
-            "Selecionar",
             "011 - kg",
             "001 - litro",
             "002 - unidade",
@@ -387,7 +416,6 @@ class MainActivity : AppCompatActivity() {
 
         //spinnerLoadEnd1()
         myStrings = arrayOf(
-            "Selecionar",
             "019 - Rua 19",
             "030 - Rua Principal",
             "002 - Rua da Prata"
@@ -396,7 +424,6 @@ class MainActivity : AppCompatActivity() {
 
         //spinnerLoadEnd2()
         myStrings = arrayOf(
-            "Selecionar",
             "001 - Coluna 1",
             "030 - Coluna 30",
             "002 - Segunda coluna"
@@ -405,7 +432,6 @@ class MainActivity : AppCompatActivity() {
 
         //spinnerLoadEnd3()
         myStrings = arrayOf(
-            "Selecionar",
             "001 - Prateleira 1010",
             "020 - Prateleira 1121",
             "054 - Prateleira 89"
@@ -413,12 +439,11 @@ class MainActivity : AppCompatActivity() {
         spinnerLoad(myStrings, R.id.spinnerEnd3)
 
         //spinnerLoadEnd4()
-        myStrings = arrayOf("Selecionar", "089 - Palete 89", "099 - Palete 99", "100 - Palete 100")
+        myStrings = arrayOf("089 - Palete 89", "099 - Palete 99", "100 - Palete 100")
         spinnerLoad(myStrings, R.id.spinnerEnd4)
 
         //spinnerLoadEnd5()
         myStrings = arrayOf(
-            "Selecionar",
             "550 - Cx. 550",
             "867 - Cx. 867",
             "300 - Cx. 300",
@@ -427,7 +452,7 @@ class MainActivity : AppCompatActivity() {
         spinnerLoad(myStrings, R.id.spinnerEnd5)
 
         //spinnerLoadEnd6()
-        myStrings = arrayOf("Selecionar", "005 - Cabide 5", "020 - Cabide 20", "054 - Cabide 54")
+        myStrings = arrayOf("005 - Cabide 5", "020 - Cabide 20", "054 - Cabide 54")
         spinnerLoad(myStrings, R.id.spinnerEnd6)
 
         // spinnerLoadLocal()
@@ -455,8 +480,10 @@ class MainActivity : AppCompatActivity() {
 
     fun abrirCamera(view: View) {   // Camera
         if (binding.idCodigo.text.isNullOrBlank()) {
-            Util.showSnackBar(view,
-                "Por favor informe o código do item antes da foto")
+            Util.showSnackBar(
+                view,
+                "Por favor informe o código do item antes da foto"
+            )
             binding.idCodigo.requestFocus(0)
             return
         }
@@ -465,23 +492,21 @@ class MainActivity : AppCompatActivity() {
             // Ensure that there's a camera activity to handle the intent
             takePictureIntent.resolveActivity(packageManager)?.also {
                 // Create the File where the photo should go
-                val photoFile: File? = try {
+                // Continue only if the File was successfully created
+                try {
                     createImageFile()
                 } catch (ex: IOException) {
                     // Error occurred while creating the File
                     null
-                }
-                // Continue only if the File was successfully created
-                if (photoFile != null) {
-                    val also = photoFile.also {
-                        val photoURI: Uri = FileProvider.getUriForFile(
-                            this,
-                            "br.com.inventpat",
-                            it
-                        )
-                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
-                        startActivityForResult(takePictureIntent, PICK_IMAGE_CODE)
-                    }
+                }?.also {
+                    val photoURI: Uri = FileProvider.getUriForFile(
+                        this,
+                        "br.com.inventpat",
+                        it
+                    )
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
+                    startActivityForResult(takePictureIntent, PICK_IMAGE_CODE)
+                    inventarioViewModel.inputFoto.value = photoURI.toString()
                 }
             }
         }
@@ -510,7 +535,7 @@ class MainActivity : AppCompatActivity() {
             // Cria a pasta se não existir
             if (!mediaStorageDir.exists()) {
                 if (!mediaStorageDir.mkdirs()){
-                    Util.showSnackBar(layout_main,"")
+                    Util.showSnackBar(layout_main, "")
                     return null
                 }
             }
@@ -526,7 +551,7 @@ class MainActivity : AppCompatActivity() {
             when(requestCode){
                 PICK_IMAGE_CODE ->
                     if (resultCode == Activity.RESULT_OK) {
-                        if (!currentPhotoPath.isNullOrEmpty()) {
+                        if (!currentPhotoPath.isEmpty()) {
                             Glide.with(this)
                                 .load(currentPhotoPath)
                                 .into(binding.imageView)
@@ -561,8 +586,10 @@ class MainActivity : AppCompatActivity() {
         with(builder)
         {
             setTitle("Alteração na base!")
-            setMessage("Atenção, as informações da base Inventário sofreram alterações. " +
-                    "O aplicativo vai ser fechado. Favor abri-lo novamente")
+            setMessage(
+                "Atenção, as informações da base Inventário sofreram alterações. " +
+                        "O aplicativo vai ser fechado. Favor abri-lo novamente"
+            )
             setPositiveButton("OK", DialogInterface.OnClickListener(function = positiveButtonClick))
 
             show()
@@ -575,7 +602,7 @@ class MainActivity : AppCompatActivity() {
 
     fun excluirItem(view: View){
 
-        val item: String = InventRecyclerViewAdapter.inventSelect.inventarioId
+        val item: String? = InventRecyclerViewAdapter.inventSelect?.inventarioId
         inventarioViewModel.telaExcluir()
         Snackbar.make(
             view,
@@ -584,7 +611,7 @@ class MainActivity : AppCompatActivity() {
         ).setAction(
             "CONFIRMAR"
         ) {
-            inventarioViewModel.excluirItem(InventRecyclerViewAdapter.inventSelect)
+            InventRecyclerViewAdapter.inventSelect?.let { it1 -> inventarioViewModel.excluirItem(it1) }
         }.show()
         inventarioViewModel.clearAll()
     }
